@@ -1,0 +1,1 @@
+[Category {categoryId = 1, categoryName = "teste"},Category {categoryId = 2, categoryName = "teste2"},Category {categoryId = 3, categoryName = "terceiraCategoria3"}]

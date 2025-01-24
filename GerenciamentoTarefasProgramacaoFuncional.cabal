@@ -60,6 +60,8 @@ executable GerenciamentoTarefasProgramacaoFuncional
 
     -- .hs or .lhs file containing the Main module.
     main-is:          Main.hs
+    other-modules:    Category
+
 
     -- Modules included in this executable, other than Main.
     -- other-modules:
@@ -68,7 +70,8 @@ executable GerenciamentoTarefasProgramacaoFuncional
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.16.4.0
+    build-depends:    base ^>=4.16.4.0,
+                      directory >=1.3.6.2
 
     -- Directories containing source files.
     hs-source-dirs:   app
