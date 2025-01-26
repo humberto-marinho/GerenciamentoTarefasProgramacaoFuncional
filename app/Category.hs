@@ -1,4 +1,4 @@
-module Category (Category(..), createCategory, saveCategories, loadCategories) where
+module Category (Category(..), createCategory, saveCategories, loadCategories, showCategories) where
 
 import System.IO
 import System.Directory (doesFileExist)
@@ -36,3 +36,8 @@ createCategory filePath categories = do
     saveCategories filePath updatedCategories -- Persiste no arquivo
     putStrLn $ "Categoria criada e salva: " ++ show newCategory
     return updatedCategories
+
+-- Função para exibir as categorias disponíveis
+showCategories :: [Category] -> String
+showCategories categories = 
+    unlines $ map (\c -> show (categoryId c) ++ " - " ++ categoryName c) categories
