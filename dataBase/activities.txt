@@ -1,0 +1,1 @@
+[Task {taskId = 1, nome = "primeiroTeste", descricao = "primeiroTesteDescricao", categoria = Category {categoryId = 1, categoryName = "teste"}, status = EmProgresso, dataInicial = 2025-02-01 12:00:00 UTC, dataFinal = 2025-02-01 13:00:00 UTC}]

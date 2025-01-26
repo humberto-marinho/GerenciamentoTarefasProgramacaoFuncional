@@ -27,15 +27,22 @@ saveTasks filePath tasks = do
     let content = show tasks -- Converte a lista para String usando `show`
     writeFile filePath content -- Salva no arquivo
 
--- Função para carregar as tarefas do arquivo
 loadTasks :: FilePath -> IO [Task]
 loadTasks filePath = do
     fileExists <- doesFileExist filePath
     if fileExists
         then do
             content <- readFile filePath
-            return $ read content -- Usa `read` para converter o conteúdo para `[Task]`
+            if null content
+                then return []  -- Retorna lista vazia se o arquivo estiver vazio
+                else case readMaybe content :: Maybe [Task] of
+                    Just tasks -> return tasks
+                    Nothing -> do
+                        putStrLn "Erro ao ler o conteúdo do arquivo de tarefas!"
+                        return [] -- Retorna uma lista vazia se o conteúdo for inválido
         else return [] -- Retorna uma lista vazia se o arquivo não existir
+
+
 
 -- Função para criar uma nova tarefa e persistir no arquivo
 createTask :: FilePath -> [Category] -> [Task] -> IO [Task]
