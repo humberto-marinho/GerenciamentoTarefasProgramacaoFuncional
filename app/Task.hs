@@ -1,10 +1,23 @@
-module Task (Task(..), createTask, saveTasks, loadTasks, Status(..)) where
+module Task (
+    Task(..), 
+    createTask, 
+    saveTasks, 
+    loadTasks, 
+    Status(..), 
+    filterTasksByStatus, 
+    sortTasksByName,
+    filterTasksByCategory
+) where
+
 
 import Data.Time (UTCTime, parseTimeM, defaultTimeLocale)
 import System.IO
 import System.Directory (doesFileExist)
 import Text.Read (readMaybe)
 import Category (Category(..), showCategories)
+import Data.List (sortBy)
+import Data.Ord (comparing)
+import Data.Time (UTCTime)
 
 -- Tipo Status
 data Status = EmProgresso | Concluida | Cancelada
@@ -105,3 +118,17 @@ parseDate input =
   case parseTimeM True defaultTimeLocale "%Y-%m-%d %H:%M:%S" input of
     Just date -> return date
     Nothing   -> fail "Formato de data inválido! Use o formato YYYY-MM-DD HH:MM:SS."
+
+-- Função para filtrar tarefas por status
+filterTasksByStatus :: Status -> [Task] -> [Task]
+filterTasksByStatus st = filter (\task -> status task == st)
+
+-- Função para ordenar tarefas por nome
+sortTasksByName :: [Task] -> [Task]
+sortTasksByName = sortBy (comparing nome)
+
+filterTasksByCategory :: Int -> [Task] -> [Task]
+filterTasksByCategory catId tasks =
+    filter (\task -> categoryId (categoria task) == catId) tasks
+
+
