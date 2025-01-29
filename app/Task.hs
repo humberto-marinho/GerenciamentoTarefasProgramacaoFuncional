@@ -6,7 +6,11 @@ module Task (
     Status(..), 
     filterTasksByStatus, 
     sortTasksByName,
-    filterTasksByCategory
+    filterTasksByCategory,
+    countTasksByStatus,
+    contarTarefasPorStatus,
+    markTaskAsDone,
+    markDone
 ) where
 
 
@@ -18,6 +22,7 @@ import Category (Category(..), showCategories)
 import Data.List (sortBy)
 import Data.Ord (comparing)
 import Data.Time (UTCTime)
+import Data.Maybe (maybe)
 
 -- Tipo Status
 data Status = EmProgresso | Concluida | Cancelada
@@ -131,4 +136,47 @@ filterTasksByCategory :: Int -> [Task] -> [Task]
 filterTasksByCategory catId tasks =
     filter (\task -> categoryId (categoria task) == catId) tasks
 
+countTasksByStatus :: [Task] -> Status -> Int
+countTasksByStatus tasks targetStatus = go tasks 0
+  where
+    go [] acc = acc
+    go (t:ts) acc
+      | status t == targetStatus = go ts (acc + 1)
+      | otherwise = go ts acc
+
+
+
+contarTarefasPorStatus :: [Task] -> IO ()
+contarTarefasPorStatus tasks = do
+    putStrLn "\nEscolha o status para contar:"
+    putStrLn "1 - Cancelada"
+    putStrLn "2 - Em Progresso"
+    putStrLn "3 - Concluído"
+    putStr "Digite o número do status: "
+    hFlush stdout
+    statusOpcao <- getLine
+    let status = case statusOpcao of
+            "1" -> Cancelada 
+            "2" -> EmProgresso  
+            "3" -> Concluida   
+            _   -> EmProgresso  
+    let quantidade = countTasksByStatus tasks status
+    putStrLn $ "\nNúmero de tarefas com status " ++ show status ++ ": " ++ show quantidade
+
+markTaskAsDone :: FilePath -> Int -> [Task] -> IO [Task]
+markTaskAsDone activitiesFilePath taskId tasks = do
+    let updatedTasks = markDone taskId tasks
+    case updatedTasks of
+        Nothing -> return tasks  -- Retorna a lista original se não encontrar a tarefa
+        Just newTasks -> do
+            -- Persiste as tarefas atualizadas no arquivo
+            saveTasks activitiesFilePath newTasks
+            return newTasks
+
+markDone :: Int -> [Task] -> Maybe [Task]
+markDone taskId tasks = 
+    let (before, after) = span (\task -> taskId /= taskId task) tasks
+    in case after of
+        (task:rest) -> Just (before ++ [task { status = Concluida }] ++ rest)
+        []          -> Nothing
 

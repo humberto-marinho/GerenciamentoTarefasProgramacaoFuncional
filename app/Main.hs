@@ -2,7 +2,7 @@ module Main where
 
 import System.IO
 import Category
-import Task (Task(..), Status(..), createTask, saveTasks, loadTasks, filterTasksByStatus, sortTasksByName, filterTasksByCategory)
+import Task (Task(..), Status(..), createTask, saveTasks, loadTasks, filterTasksByStatus, sortTasksByName, filterTasksByCategory, countTasksByStatus, contarTarefasPorStatus, markTaskAsDone)
 
 categoriesFilePath :: FilePath
 categoriesFilePath = "dataBase/categories.txt"
@@ -29,7 +29,9 @@ loop categories tasks = do
     putStrLn "2 - Criar Tarefa"
     putStrLn "3 - Listar Tarefas em Andamento (Ordenadas por Nome)"
     putStrLn "4 - Filtrar Tarefas"
-    putStrLn "5 - Encerrar o Programa"
+    putStrLn "5 - Contar Tarefas por Status"
+    putStrLn "6 - Concluir Tarefa"
+    putStrLn "7 - Encerrar o Programa"
     putStr "Digite o número da opção: "
     hFlush stdout
     opcao <- getLine
@@ -49,6 +51,16 @@ loop categories tasks = do
             menuFiltragem categories tasks
             loop categories tasks
         "5" -> do
+            contarTarefasPorStatus tasks
+            loop categories tasks
+        "6" -> do
+            putStrLn "Digite o ID da tarefa que você deseja concluir:"
+            hFlush stdout
+            taskIdStr <- getLine
+            let taskId = read taskIdStr :: Int
+            updatedTasks <- markTaskAsDone activitiesFilePath taskId tasks
+            loop categories updatedTasks
+        "7" -> do
             putStrLn "Encerrando o programa. Até logo!"
             putStrLn "\nCategorias criadas nesta sessão:"
             mapM_ print categories
@@ -114,3 +126,4 @@ filtrarPorCategoria categories tasks = do
                 then putStrLn "Nenhuma tarefa encontrada para essa categoria."
                 else mapM_ print tarefasFiltradas
         else putStrLn "Opção inválida. Retornando ao menu principal."
+
