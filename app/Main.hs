@@ -26,10 +26,11 @@ loop :: [Category] -> [Task] -> IO ()
 loop categories tasks = do
     putStrLn "\nEscolha uma opção:"
     putStrLn "1 - Criar Categoria"
-    putStrLn "2 - Criar Tarefa"
-    putStrLn "3 - Listar Tarefas em Andamento (Ordenadas por Nome)"
-    putStrLn "4 - Filtrar Tarefas"
-    putStrLn "5 - Encerrar o Programa"
+    putStrLn "2 - Deletar Categoria"
+    putStrLn "3 - Criar Tarefa"
+    putStrLn "4 -  Filtrar Tarefas"
+    putStrLn "5 - Filtrar Tarefas"
+    putStrLn "6 - Encerrar o Programa"
     putStr "Digite o número da opção: "
     hFlush stdout
     opcao <- getLine
@@ -38,17 +39,20 @@ loop categories tasks = do
             updatedCategories <- createCategory categoriesFilePath categories
             loop updatedCategories tasks
         "2" -> do
+            updatedCategories <- deleteCategory categoriesFilePath categories
+            loop updatedCategories tasks    
+        "3" -> do
             updatedTasks <- createTask activitiesFilePath categories tasks
             loop categories updatedTasks
-        "3" -> do
+        "4" -> do
             let inProgressTasks = sortTasksByName (filterTasksByStatus EmProgresso tasks)
             putStrLn "\nTarefas em andamento (ordenadas por nome):"
             mapM_ print inProgressTasks
             loop categories tasks
-        "4" -> do
+        "5" -> do
             menuFiltragem categories tasks
             loop categories tasks
-        "5" -> do
+        "6" -> do
             putStrLn "Encerrando o programa. Até logo!"
             putStrLn "\nCategorias criadas nesta sessão:"
             mapM_ print categories

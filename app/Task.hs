@@ -20,7 +20,7 @@ import Data.Ord (comparing)
 import Data.Time (UTCTime)
 
 -- Tipo Status
-data Status = EmProgresso | Concluida | Cancelada
+data Status = Agendada | EmProgresso | Cancelada | Concluida
   deriving (Show, Read, Eq)
 
 -- Tipo Task
@@ -56,56 +56,74 @@ loadTasks filePath = do
         else return [] -- Retorna uma lista vazia se o arquivo não existir
 
 
-
--- Função para criar uma nova tarefa e persistir no arquivo
 createTask :: FilePath -> [Category] -> [Task] -> IO [Task]
 createTask filePath categories tasks = do
     -- Nome da tarefa
     putStrLn "Digite o nome da tarefa:"
     nome <- getLine
+    if null nome then do
+        putStrLn "Erro: O nome da tarefa não pode ser vazio!"
+        return tasks
+    else do
+        -- Descrição da tarefa
+        putStrLn "Digite a descrição da tarefa:"
+        descricao <- getLine
+        if null descricao then do
+            putStrLn "Erro: A descrição da tarefa não pode ser vazia!"
+            return tasks
+        else do
+            -- Categoria
+            putStrLn "Categorias disponíveis:"
+            putStrLn $ showCategories categories
+            putStrLn "Digite o ID da categoria:"
+            categoryIdInput <- getLine
+            let maybeCategoria = findCategory (readMaybe categoryIdInput) categories
+            case maybeCategoria of
+                Just categoria -> do
+                    -- Status
+                    putStrLn "Digite o status da tarefa (Agendada | EmProgresso | Cancelada | Concluida):"
+                    statusInput <- getLine
+                    let maybeStatus = readMaybe statusInput :: Maybe Status
+                    case maybeStatus of
+                        Just status -> do
+                            -- Data Inicial
+                            putStrLn "Digite a data inicial no formato YYYY-MM-DD HH:MM:SS:"
+                            dataInicialInput <- getLine
+                            maybeDataInicial <- parseDate dataInicialInput
 
-    -- Descrição da tarefa
-    putStrLn "Digite a descrição da tarefa:"
-    descricao <- getLine
+                            -- Data Final
+                            putStrLn "Digite a data final no formato YYYY-MM-DD HH:MM:SS:"
+                            dataFinalInput <- getLine
+                            maybeDataFinal <- parseDate dataFinalInput
 
-    -- Categoria
-    putStrLn "Categorias disponíveis:"
-    putStrLn $ showCategories categories
-    putStrLn "Digite o ID da categoria:"
-    categoryIdInput <- getLine
-    let maybeCategoria = findCategory (readMaybe categoryIdInput) categories
-    categoria <- case maybeCategoria of
-        Just c  -> return c
-        Nothing -> fail "Categoria inválida!"
+                            -- Validação das datas
+                            case (maybeDataInicial, maybeDataFinal) of
+                                (Just dataInicial, Just dataFinal) -> do
+                                    if dataInicial >= dataFinal then do
+                                        putStrLn "Erro: A data inicial deve ser anterior à data final!"
+                                        return tasks  -- Retorna a lista original de tarefas
+                                    else do
+                                        -- Criação da Tarefa com ID
+                                        let newTaskId = length tasks + 1 -- ID da tarefa será baseado no tamanho do vetor
+                                        let newTask = Task newTaskId nome descricao categoria status dataInicial dataFinal
+                                        let updatedTasks = tasks ++ [newTask]
 
-    -- Status
-    putStrLn "Digite o status da tarefa (EmProgresso, Concluida, Cancelada):"
-    statusInput <- getLine
-    let maybeStatus = readMaybe statusInput :: Maybe Status
-    status <- case maybeStatus of
-        Just s  -> return s
-        Nothing -> fail "Status inválido!"
+                                        -- Salvar tarefas no arquivo
+                                        saveTasks filePath updatedTasks
+                                        putStrLn $ "Tarefa criada e salva: " ++ show newTask
 
-    -- Data Inicial
-    putStrLn "Digite a data inicial no formato YYYY-MM-DD HH:MM:SS:"
-    dataInicialInput <- getLine
-    dataInicial <- parseDate dataInicialInput
+                                        return updatedTasks  -- Retorna a lista de tarefas atualizada
+                                _ -> do
+                                    putStrLn "Erro: Formato de data inválido! Use o formato YYYY-MM-DD HH:MM:SS."
+                                    return tasks  -- Retorna a lista original de tarefas
+                        Nothing -> do
+                            putStrLn "Erro: Status inválido!"
+                            return tasks  -- Retorna a lista original de tarefas
+                Nothing -> do
+                    putStrLn "Erro: Categoria inválida!"
+                    return tasks  -- Retorna a lista original de tarefas
 
-    -- Data Final
-    putStrLn "Digite a data final no formato YYYY-MM-DD HH:MM:SS:"
-    dataFinalInput <- getLine
-    dataFinal <- parseDate dataFinalInput
 
-    -- Criação da Tarefa com ID
-    let newTaskId = length tasks + 1 -- ID da tarefa será baseado no tamanho do vetor
-    let newTask = Task newTaskId nome descricao categoria status dataInicial dataFinal
-    let updatedTasks = tasks ++ [newTask]
-
-    -- Salvar tarefas no arquivo
-    saveTasks filePath updatedTasks
-    putStrLn $ "Tarefa criada e salva: " ++ show newTask
-
-    return updatedTasks
 
 -- Função auxiliar para buscar categoria por ID
 findCategory :: Maybe Int -> [Category] -> Maybe Category
@@ -113,11 +131,10 @@ findCategory (Just cid) categories = lookup cid $ map (\c -> (categoryId c, c)) 
 findCategory Nothing _ = Nothing
 
 -- Função auxiliar para validar e converter data e hora
-parseDate :: String -> IO UTCTime
+parseDate :: String -> IO (Maybe UTCTime)
 parseDate input =
-  case parseTimeM True defaultTimeLocale "%Y-%m-%d %H:%M:%S" input of
-    Just date -> return date
-    Nothing   -> fail "Formato de data inválido! Use o formato YYYY-MM-DD HH:MM:SS."
+  return $ parseTimeM True defaultTimeLocale "%Y-%m-%d %H:%M:%S" input
+
 
 -- Função para filtrar tarefas por status
 filterTasksByStatus :: Status -> [Task] -> [Task]
@@ -130,5 +147,9 @@ sortTasksByName = sortBy (comparing nome)
 filterTasksByCategory :: Int -> [Task] -> [Task]
 filterTasksByCategory catId tasks =
     filter (\task -> categoryId (categoria task) == catId) tasks
+
+
+
+
 
 
