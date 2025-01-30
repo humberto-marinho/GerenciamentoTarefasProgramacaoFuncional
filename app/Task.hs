@@ -6,7 +6,10 @@ module Task (
     Status(..), 
     filterTasksByStatus, 
     sortTasksByName,
-    filterTasksByCategory
+    filterTasksByCategory,
+    filtrarTasks,
+    contarTarefasPorStatus,
+    markTaskAsDone
 ) where
 
 
@@ -153,3 +156,155 @@ filterTasksByCategory catId tasks =
 
 
 
+-------------------------------------
+-- Função para filtrar as tasks-- Função para filtrar as tarefas (não retorna nada, apenas imprime)
+filtrarTasks :: [Task] -> [Category] -> IO ()
+filtrarTasks tasks categories = do
+    -- Pergunta se deve filtrar por status
+    putStrLn "Filtrar por status (s/n)?"
+    statusResponse <- getLine
+    let statusFilter = if statusResponse == "s" 
+                        then Just <$> askStatus 
+                        else return Nothing
+
+    -- Pergunta se deve filtrar por categoria
+    putStrLn "Filtrar por categoria (s/n)?"
+    categoryResponse <- getLine
+    let categoryFilter = if categoryResponse == "s" 
+                         then askCategory categories  -- Remove o Just $ e o Maybe extra
+                         else return Nothing
+
+    -- Pergunta se deve filtrar por data
+    putStrLn "Filtrar por data (s/n)?"
+    dataResponse <- getLine
+    let dataFilter = if dataResponse == "s" 
+                     then askData
+                     else return Nothing
+
+    -- Lê e valida todos os filtros
+    status <- statusFilter
+    category <- categoryFilter
+    dateRange <- dataFilter
+
+    -- Filtra as tarefas com base nos critérios fornecidos
+    let validTasks = filterTasksByCriteria tasks status category dateRange
+
+    -- Exibe as tarefas filtradas
+    putStrLn "Tarefas filtradas:"
+    mapM_ print validTasks
+
+-- Função para perguntar e retornar o status
+askStatus :: IO Status
+askStatus = do
+    putStrLn "Digite o status (Agendada | EmProgresso | Cancelada | Concluida):"
+    statusInput <- getLine
+    case readMaybe statusInput :: Maybe Status of
+      Just status -> return status
+      Nothing -> do
+        putStrLn "Status inválido."
+        askStatus
+
+-- Função para perguntar e retornar a categoria
+askCategory :: [Category] -> IO (Maybe Category)
+askCategory categories = do
+    putStrLn "Categorias disponíveis:"
+    putStrLn $ showCategories categories
+    putStrLn "Digite o ID da categoria:"
+    categoryIdInput <- getLine
+    let maybeCategoria = findCategory (readMaybe categoryIdInput) categories
+    
+    case maybeCategoria of
+        Just categoria -> return (Just categoria)
+        Nothing -> do
+            putStrLn "Categoria não encontrada. Tente novamente."
+            askCategory categories
+
+-- Função para perguntar e retornar o intervalo de datas
+askData :: IO (Maybe (UTCTime, UTCTime))
+askData = do
+    putStrLn "Digite a data inicial (YYYY-MM-DD HH:MM:SS):"
+    startDateInput <- getLine
+    startDate <- parseDate startDateInput
+    case startDate of
+      Nothing -> do
+        putStrLn "Data inicial inválida."
+        return Nothing
+      Just start -> do
+        putStrLn "Digite a data final (YYYY-MM-DD HH:MM:SS):"
+        endDateInput <- getLine
+        endDate <- parseDate endDateInput
+        case endDate of
+          Nothing -> do
+            putStrLn "Data final inválida."
+            return Nothing
+          Just end -> return (Just (start, end))
+
+-- Função para filtrar as tarefas com base nos critérios
+filterTasksByCriteria :: [Task] -> Maybe Status -> Maybe Category -> Maybe (UTCTime, UTCTime) -> [Task]
+filterTasksByCriteria tasks statusFilter categoryFilter dateFilter =
+  let filteredByStatus = case statusFilter of
+        Just inputStatus -> filter (\task -> inputStatus == status task) tasks
+        Nothing -> tasks
+      filteredByCategory = case categoryFilter of
+        Just category -> filter (\task -> category == categoria task) filteredByStatus
+        Nothing -> filteredByStatus
+      filteredByDate = case dateFilter of
+        Just (start, end) -> filter (\task -> dataFinal task >= start && dataFinal task <= end) filteredByCategory
+        Nothing -> filteredByCategory
+  in filteredByDate
+
+
+----------------------------Contar tasks por status com função recursão de cauda
+contarTarefasPorStatus :: [Task] -> IO ()
+contarTarefasPorStatus tasks = do
+    putStrLn "\nEscolha o status para contar:"
+    putStrLn "1 - Agendada"
+    putStrLn "2 - Em Progresso"
+    putStrLn "3 - Concluído"
+    putStrLn "4 - Cancelada"
+    putStr "Digite o número do status: "
+    hFlush stdout
+    statusOpcao <- getLine
+    let status = case statusOpcao of
+            "1" -> Just Agendada
+            "2" -> Just EmProgresso
+            "3" -> Just Concluida
+            "4" -> Just Cancelada
+            _   -> Nothing
+    case status of
+        Just selectedStatus -> do
+            let quantidade = countTasksByStatus tasks selectedStatus
+            putStrLn $ "\nNúmero de tarefas com status " ++ show selectedStatus ++ ": " ++ show quantidade
+        Nothing -> do
+            putStrLn "Opção inválida. Por favor, escolha um número de 1 a 3."
+            contarTarefasPorStatus tasks  -- Chama a função novamente para permitir uma nova tentativa
+
+
+-- Função recursiva para contar tarefas por status.
+countTasksByStatus :: [Task] -> Status -> Int
+countTasksByStatus tasks targetStatus = go tasks 0
+  where
+    go [] acc = acc
+    go (t:ts) acc
+      | status t == targetStatus = go ts (acc + 1)
+      | otherwise = go ts acc
+
+
+-- Função para marcar a tarefa como concluída usando Functor na forma fmap
+markTaskAsDone :: FilePath -> Int -> [Task] -> IO [Task]
+markTaskAsDone filePath targetId tasks = do
+    -- Mapeia sobre a lista de tarefas, e se encontrar a tarefa com o ID fornecido, atualiza o status para Concluida
+    let updatedTasks = fmap (\task -> if taskId task == targetId 
+                                      then task { status = Concluida }
+                                      else task) tasks
+    
+    -- Verifica se a tarefa foi encontrada
+    let taskFound = any (\task -> taskId task == targetId) tasks
+    
+    if taskFound
+        then do
+            saveTasks filePath updatedTasks  -- Persiste as tarefas atualizadas no arquivo
+            putStrLn $ "Tarefa com ID " ++ show targetId ++ " foi marcada como concluída."
+        else do
+            putStrLn $ "Tarefa com ID " ++ show targetId ++ " não encontrada."
+    return updatedTasks  -- Retorna a lista de tarefas atualizada

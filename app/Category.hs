@@ -3,11 +3,12 @@ module Category (Category(..), createCategory, saveCategories, loadCategories, s
 import System.IO
 import System.Directory (doesFileExist)
 
--- Definição do tipo Category
+-- Tipo Category
 data Category = Category
     { categoryId :: Int
     , categoryName :: String
-    } deriving (Show, Read)
+    } deriving (Show, Read, Eq)  -- Adicionando Eq aqui
+
 
 -- Função para salvar as categorias no arquivo
 saveCategories :: FilePath -> [Category] -> IO ()
