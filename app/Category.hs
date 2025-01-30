@@ -7,7 +7,7 @@ import System.Directory (doesFileExist)
 data Category = Category
     { categoryId :: Int
     , categoryName :: String
-    } deriving (Show, Read, Eq)  -- Adicionando Eq aqui
+    } deriving (Show, Read, Eq)
 
 
 -- Função para salvar as categorias no arquivo

@@ -28,13 +28,13 @@ data Status = Agendada | EmProgresso | Cancelada | Concluida
 
 -- Tipo Task
 data Task = Task
-  { taskId      :: Int        -- ID único da tarefa
-  , nome        :: String     -- Nome da tarefa
-  , descricao   :: String     -- Descrição da tarefa
-  , categoria   :: Category   -- Categoria da tarefa
-  , status      :: Status     -- Status da tarefa
-  , dataInicial :: UTCTime    -- Data inicial
-  , dataFinal   :: UTCTime    -- Data final
+  { taskId      :: Int        
+  , nome        :: String     
+  , descricao   :: String     
+  , categoria   :: Category   
+  , status      :: Status     
+  , dataInicial :: UTCTime    
+  , dataFinal   :: UTCTime    
   } deriving (Show, Read)
 
 -- Função para salvar as tarefas no arquivo
@@ -151,13 +151,7 @@ filterTasksByCategory :: Int -> [Task] -> [Task]
 filterTasksByCategory catId tasks =
     filter (\task -> categoryId (categoria task) == catId) tasks
 
-
-
-
-
-
--------------------------------------
--- Função para filtrar as tasks-- Função para filtrar as tarefas (não retorna nada, apenas imprime)
+-- Função para filtrar as tasks
 filtrarTasks :: [Task] -> [Category] -> IO ()
 filtrarTasks tasks categories = do
     -- Pergunta se deve filtrar por status
@@ -171,7 +165,7 @@ filtrarTasks tasks categories = do
     putStrLn "Filtrar por categoria (s/n)?"
     categoryResponse <- getLine
     let categoryFilter = if categoryResponse == "s" 
-                         then askCategory categories  -- Remove o Just $ e o Maybe extra
+                         then askCategory categories
                          else return Nothing
 
     -- Pergunta se deve filtrar por data
@@ -253,8 +247,7 @@ filterTasksByCriteria tasks statusFilter categoryFilter dateFilter =
         Nothing -> filteredByCategory
   in filteredByDate
 
-
-----------------------------Contar tasks por status com função recursão de cauda
+--Contar tasks por status com função recursão de cauda
 contarTarefasPorStatus :: [Task] -> IO ()
 contarTarefasPorStatus tasks = do
     putStrLn "\nEscolha o status para contar:"
